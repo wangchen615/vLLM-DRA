@@ -1,4 +1,4 @@
-# vLLM-DRA
+# Deploy vLLM server on Kubernetes using NVIDIA Kubernetes DRA driver.
 The KubeCon AI day lightning talk to deploy vLLM server using DRA controller by NVIDIA
 
 ## Steps to deploy vLLM server with DRA
