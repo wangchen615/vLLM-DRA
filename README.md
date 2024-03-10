@@ -148,7 +148,19 @@ git clone https://github.com/wangchen615/vLLM-DRA
 cd vLLM-DRA
 ```
 
-2. Deploy the `vllm_dra_1gpu.yaml`.
+2. Deploy the `vllm_cache.yaml` to create secret token to download models from HuggingFace and create the persistent volume and persistent volume claim to cache models on localhost.
+
+- Replace the `<hg_secret_token>` to the base64 encoded huggingface token.
+```bash
+echo -n 'your_hg_token' | base64
+```
+
+- Create the cache
+```bash
+kubectl create -f vllm_cache.yaml
+```
+
+3. Deploy the `vllm_dra_1gpu.yaml`.
 ```bash
 kubectl create -f vllm_dra_1gpu.yaml
 ```
