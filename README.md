@@ -115,7 +115,31 @@ spec:
           claimName: huggingface-cache-pvc
 ```
 
-### 3. Prepare a cluster installed with DRA controller and driver.
+### 3. Setting up a cluster installed with DRA controller and driver.
+1. Follow the [NVIDIA k8s-dra-driver](https://github.com/NVIDIA/k8s-dra-driver/tree/main) tutorial to set up your node environment and start a kind cluster. The node env setup is skipped here.
+
+2. Set up a `kind` cluster and install the `NVIDIA k8s-dra-driver`.
+
+First, clone the NVIDIA k8s-dra-driver repo.
+```bash
+git clone https://github.com/NVIDIA/k8s-dra-driver.git
+cd k8s-dra-driver
+```
+
+Then, create a `kind` cluster.
+```bash
+./demo/clusters/kind/create-cluster.sh
+```
+
+From there, we run their script to build the image for NVIDIA GPU resource driver and make the built image available to the `kind` cluster.
+```bash
+./demo/clusters/kind/build-dra-driver.sh
+```
+
+Then, we install the NVIDIA GPU DRA driver.
+```bash
+./demo/clusters/kind/install-dra-driver.sh
+```
 
 ### 4. Deploy the vLLM server deployment.
 
