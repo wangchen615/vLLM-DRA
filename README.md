@@ -142,5 +142,31 @@ Then, we install the NVIDIA GPU DRA driver.
 ```
 
 ### 4. Deploy the vLLM server deployment.
+1. Clone this repo.
+```
+git clone https://github.com/wangchen615/vLLM-DRA
+cd vLLM-DRA
+```
+
+2. Deploy the `vllm_dra_1gpu.yaml`.
+```bash
+kubectl create -f vllm_dra_1gpu.yaml
+```
 
 ### 5. Testing the vLLM server deployment
+1. Forward the port to the localhost.
+```
+kubectl port-forward svc/vllm 8000:8000 >/dev/null 2>&1 &
+```
+
+2. Try the following Query.
+```
+curl http://localhost:8000/v1/completions \
+-H "Content-Type: application/json" \
+-d '{
+"model": "facebook/opt-125m",
+"prompt": "San Francisco is a",
+"max_tokens": 7,
+"temperature": 0
+}'
+```
