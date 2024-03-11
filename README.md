@@ -182,3 +182,14 @@ curl http://localhost:8000/v1/completions \
 "temperature": 0
 }'
 ```
+
+## Steps to run demo on OpenShift
+
+- Clone the repo
+  
+- Run
+  
+```bash
+./demo.sh
+```
+
