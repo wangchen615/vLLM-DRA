@@ -74,7 +74,7 @@ spec:
         value: "/workspace/huggingface/"
       resources:
         claims:
-        - name: mig-1g-5gb-0
+        - name: mig-4g-20gb-0
         - name: mig-enabled-gpu
   resourceClaims:
     - name: mig-4g-20gb-0
