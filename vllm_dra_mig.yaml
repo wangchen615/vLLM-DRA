@@ -1,0 +1,98 @@
+---
+apiVersion: gpu.resource.nvidia.com/v1alpha1
+kind: GpuClaimParameters
+metadata:
+  namespace: default
+  name: mig-enabled-gpu
+spec:
+  count: 1
+  selector:
+    migEnabled: true
+---
+apiVersion: resource.k8s.io/v1alpha2
+kind: ResourceClaim
+metadata:
+  namespace: default
+  name: mig-enabled-gpu
+spec:
+  resourceClassName: gpu.nvidia.com
+  parametersRef:
+    apiGroup: gpu.resource.nvidia.com
+    kind: GpuClaimParameters
+    name: mig-enabled-gpu
+---
+apiVersion: gpu.resource.nvidia.com/v1alpha1
+kind: MigDeviceClaimParameters
+metadata:
+  name: mig-4g.20gb
+spec:
+  profile: "4g.20gb"
+  gpuClaimName: "mig-enabled-gpu"
+---
+apiVersion: resource.k8s.io/v1alpha2
+kind: ResourceClaim
+metadata:
+  name: mig-4g.20gb
+spec:
+  resourceClassName: gpu.nvidia.com
+  parametersRef:
+    apiGroup: gpu.resource.nvidia.com
+    kind: MigDeviceClaimParameters
+    name: mig-4g.20gb
+---
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: vllm
+  labels:
+    app: vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  containers:
+    - name: vllm-container
+      image: "quay.io/chenw615/vllm_dra"
+      ports:
+      - containerPort: 8000
+      env:
+      - name: HUGGING_FACE_HUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: huggingface-secret
+            key: HF_TOKEN
+      - name: MODEL_NAME
+        value: "facebook/opt-125m"
+      - name: TRANSFORMERS_CACHE
+        value: "/workspace/huggingface/"
+      - name: HF_HOME
+        value: "/workspace/huggingface/"
+      - name: NUMBA_DISABLE_JIT
+        value: 1
+      - name: NUMBA_CACHE_DIR
+        value: "/workspace/huggingface/"
+      resources:
+        claims:
+        - name: mig-1g-5gb-0
+        - name: mig-enabled-gpu
+  resourceClaims:
+    - name: mig-4g-20gb-0
+      source:
+        resourceClaimName: mig-4g.20gb
+    - name: mig-enabled-gpu
+      source:
+        resourceClaimName: mig-enabled-gpu
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  selector:
+    app: vllm
