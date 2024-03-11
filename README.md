@@ -183,11 +183,12 @@ curl http://localhost:8000/v1/completions \
 }'
 ```
 
-## Steps to run demo on OpenShift
+## Steps to run the DRA MIG slice creation demo on OpenShift
+This interactive tutotial will lead you through using DRA to dynamically create a MIG slice to deploy vLLM server on OpenShift.
 
 - Clone the repo
   
-- Run
+- Run and follow the steps interactively.
   
 ```bash
 ./demo.sh
