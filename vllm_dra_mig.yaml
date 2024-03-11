@@ -1,8 +1,22 @@
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gpu-test1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: huggingface-secret
+  namespace: gpu-test1
+type: Opaque
+data:
+  HF_TOKEN: <your-token> # Base64-encoded value of 'your_huggingface_secret_token'
+---
 apiVersion: gpu.resource.nvidia.com/v1alpha1
 kind: GpuClaimParameters
 metadata:
-  namespace: default
+  namespace: gpu-test1
   name: mig-enabled-gpu
 spec:
   count: 1
@@ -12,7 +26,7 @@ spec:
 apiVersion: resource.k8s.io/v1alpha2
 kind: ResourceClaim
 metadata:
-  namespace: default
+  namespace: gpu-test1
   name: mig-enabled-gpu
 spec:
   resourceClassName: gpu.nvidia.com
@@ -25,6 +39,7 @@ apiVersion: gpu.resource.nvidia.com/v1alpha1
 kind: MigDeviceClaimParameters
 metadata:
   name: mig-4g.20gb
+  namespace: gpu-test1
 spec:
   profile: "4g.20gb"
   gpuClaimName: "mig-enabled-gpu"
@@ -33,6 +48,7 @@ apiVersion: resource.k8s.io/v1alpha2
 kind: ResourceClaim
 metadata:
   name: mig-4g.20gb
+  namespace: gpu-test1
 spec:
   resourceClassName: gpu.nvidia.com
   parametersRef:
@@ -40,54 +56,70 @@ spec:
     kind: MigDeviceClaimParameters
     name: mig-4g.20gb
 ---
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: gpu-test1
   name: vllm
   labels:
-    app: vllm
+    app: gpu-test1-vllm
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: vllm
-  containers:
-    - name: vllm-container
-      image: "quay.io/chenw615/vllm_dra"
-      ports:
-      - containerPort: 8000
-      env:
-      - name: HUGGING_FACE_HUB_TOKEN
-        valueFrom:
-          secretKeyRef:
-            name: huggingface-secret
-            key: HF_TOKEN
-      - name: MODEL_NAME
-        value: "facebook/opt-125m"
-      - name: TRANSFORMERS_CACHE
-        value: "/workspace/huggingface/"
-      - name: HF_HOME
-        value: "/workspace/huggingface/"
-      - name: NUMBA_DISABLE_JIT
-        value: 1
-      - name: NUMBA_CACHE_DIR
-        value: "/workspace/huggingface/"
-      resources:
-        claims:
-        - name: mig-4g-20gb-0
-        - name: mig-enabled-gpu
-  resourceClaims:
-    - name: mig-4g-20gb-0
-      source:
-        resourceClaimName: mig-4g.20gb
-    - name: mig-enabled-gpu
-      source:
-        resourceClaimName: mig-enabled-gpu
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      containers:
+      - name: vllm-container
+        image: quay.io/chenw615/vllm_dra
+        # command: ["/bin/sh", "-c"]
+        # #changes below command to run vLLM workload.
+        # args: ["sleep 99999"]
+        command:
+        - "python"
+        - "-m"
+        - "vllm.entrypoints.openai.api_server"
+        - "--model"
+        - "facebook/opt-125m"
+        ports:
+        - containerPort: 8000
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: huggingface-secret
+              key: HF_TOKEN
+        - name: MODEL_NAME
+          value: "facebook/opt-125m"
+        - name: TRANSFORMERS_CACHE
+          value: "/workspace/huggingface/"
+        - name: HF_HOME
+          value: "/workspace/huggingface/"
+        - name: NUMBA_DISABLE_JIT
+          value: "1"
+        - name: NUMBA_CACHE_DIR
+          value: "/workspace/huggingface/"
+        resources:
+          claims:
+          - name: mig-4g-20gb-0
+          - name: mig-enabled-gpu
+      resourceClaims:
+      - name: mig-4g-20gb-0
+        source:
+          resourceClaimName: mig-4g.20gb
+      - name: mig-enabled-gpu
+        source:
+          resourceClaimName: mig-enabled-gpu    
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: vllm
+  namespace: gpu-test1
 spec:
   type: ClusterIP
   ports:
